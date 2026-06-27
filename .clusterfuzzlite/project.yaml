@@ -1,0 +1,17 @@
+language: c++
+main_repo: bitmapkit
+fuzzing_engines:
+  - libfuzzer
+sanitizers:
+  - address
+  - undefined
+fuzz_targets:
+  - bmp_fuzzer
+  - tga_fuzzer
+  - pcx_fuzzer
+  - pnm_fuzzer
+  - ico_fuzzer
+  - image_decode_fuzzer
+  - metadata_fuzzer
+  - recovery_fuzzer
+  - convert_fuzzer
