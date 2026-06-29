@@ -37,15 +37,16 @@ bk_status bk_decode_exr(const uint8_t *data, size_t size,
     pos += type_len + 1;
     uint32_t n = exr_le32(data + pos);
     pos += 4;
-    if (pos + n > size)
+    if (n > size - pos)
       return BK_ERR_TRUNCATED;
     if (strcmp(name, "compression") == 0 && n >= 1)
       compression = data[pos];
     else if (strcmp(name, "channels") == 0 && strcmp(type, "chlist") == 0) {
       size_t cp = pos;
-      while (cp < pos + n && data[cp]) {
-        size_t l = cstrnlen_local(data + cp, pos + n - cp);
-        if (l == 0 || cp + l + 17 > pos + n)
+      size_t end = pos + n;
+      while (cp < end && data[cp]) {
+        size_t l = cstrnlen_local(data + cp, end - cp);
+        if (l == 0 || l > end - cp || end - cp - l < 17u)
           break;
         channels++;
         cp += l + 17;
@@ -56,8 +57,12 @@ bk_status bk_decode_exr(const uint8_t *data, size_t size,
       int32_t xmax = (int32_t)exr_le32(data + pos + 8);
       int32_t ymax = (int32_t)exr_le32(data + pos + 12);
       if (xmax >= xmin && ymax >= ymin) {
-        width = (uint32_t)(xmax - xmin + 1);
-        height = (uint32_t)(ymax - ymin + 1);
+        int64_t w = (int64_t)xmax - (int64_t)xmin + 1;
+        int64_t h = (int64_t)ymax - (int64_t)ymin + 1;
+        if (w <= UINT32_MAX && h <= UINT32_MAX) {
+          width = (uint32_t)w;
+          height = (uint32_t)h;
+        }
       }
     }
     pos += n;
