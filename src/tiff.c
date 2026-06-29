@@ -110,16 +110,19 @@ static int tiff_find(const tiff_tag *tags, uint16_t n, uint16_t id,
 
 static bk_status tiff_read_ifd(const tiff_reader *r, uint32_t ifd,
                                tiff_tag *tags, uint16_t *count) {
+  size_t base = (size_t)ifd;
+  size_t entry_bytes;
   uint16_t n;
-  if (ifd + 2 > r->size)
+  if (base > r->size || r->size - base < 2u)
     return BK_ERR_TRUNCATED;
-  n = tr16(r, ifd);
+  n = tr16(r, base);
   if (n > 128)
     return BK_ERR_LIMIT;
-  if (ifd + 2u + (size_t)n * 12u > r->size)
+  entry_bytes = (size_t)n * 12u;
+  if (r->size - base - 2u < entry_bytes)
     return BK_ERR_TRUNCATED;
   for (uint16_t i = 0; i < n; ++i) {
-    bk_status st = tiff_read_tag(r, ifd + 2u + (size_t)i * 12u, &tags[i]);
+    bk_status st = tiff_read_tag(r, base + 2u + (size_t)i * 12u, &tags[i]);
     if (st != BK_OK)
       return st;
   }
