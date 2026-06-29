@@ -89,7 +89,7 @@ static void audit_bmp(const uint8_t *data, size_t size,
                  "DIB header is too small", 14);
     return;
   }
-  if (14u + dib > size) {
+  if (dib > size - 14u) {
     bk_audit_add(report, BK_ERROR, "bmp-dib-past-eof",
                  "DIB header extends past end of file", 14);
     return;
@@ -103,6 +103,11 @@ static void audit_bmp(const uint8_t *data, size_t size,
     image_size = 0;
     colors = 0;
   } else {
+    if (dib < 40) {
+      bk_audit_add(report, BK_ERROR, "bmp-short-info-dib",
+                   "BMP info header is too short", 14);
+      return;
+    }
     width = rd32le(data + 18);
     height = rd32le(data + 22);
     planes = rd16le(data + 26);
@@ -142,7 +147,7 @@ static void audit_bmp(const uint8_t *data, size_t size,
   if (colors > 256 && bpp <= 8)
     bk_audit_add(report, BK_WARNING, "bmp-large-palette",
                  "palette entry count is larger than expected", 46);
-  if (image_size && off + image_size > size)
+  if (image_size && (off > size || image_size > size - off))
     bk_audit_add(report, BK_WARNING, "bmp-image-size-overflow",
                  "declared image data extends past end of file", 34);
 }

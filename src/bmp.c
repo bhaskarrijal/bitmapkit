@@ -89,6 +89,8 @@ BK_UNUSED:;
     h->width = sw;
     h->height = sh;
     if (h->height < 0) {
+      if (h->height == INT32_MIN)
+        return BK_ERR_DIMENSIONS;
       h->top_down = 1;
       h->height = -h->height;
     }
@@ -291,13 +293,14 @@ static bk_status bk_bmp_decode_rle8(const uint8_t *data, size_t size,
     } else if (b == 1) {
       return BK_OK;
     } else if (b == 2) {
-      if (p + 1 > size)
+      if (size - p < 2u)
         return BK_ERR_TRUNCATED;
       x += data[p++];
       y += data[p++];
     } else {
       uint32_t i;
-      if (p + b > size)
+      size_t bytes = b;
+      if (size - p < bytes + (bytes & 1u))
         return BK_ERR_TRUNCATED;
       for (i = 0; i < b; ++i)
         bk_bmp_put_index(image, h, pal, pal_count, x++, y, data[p++]);
@@ -330,14 +333,14 @@ static bk_status bk_bmp_decode_rle4(const uint8_t *data, size_t size,
     } else if (b == 1) {
       return BK_OK;
     } else if (b == 2) {
-      if (p + 1 > size)
+      if (size - p < 2u)
         return BK_ERR_TRUNCATED;
       x += data[p++];
       y += data[p++];
     } else {
       uint32_t i;
       size_t bytes = (b + 1u) / 2u;
-      if (p + bytes > size)
+      if (size - p < bytes + (bytes & 1u))
         return BK_ERR_TRUNCATED;
       for (i = 0; i < b; ++i) {
         uint8_t v = data[p + i / 2u];
